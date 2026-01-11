@@ -624,7 +624,7 @@ async def today(update: Update, context: ContextTypes.DEFAULT_TYPE):
     all_groups = get_user_all_groups(user_id)
     
     if not all_groups:
-        await update.message.reply_text(
+        await message.reply_text(
             "❌ Группа не выбрана\n\n"
             "Сначала выбери группу: /setgroup",
             parse_mode='Markdown'
