@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  bot:
+    build: .
+    restart: always
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+    env_file:
+      - .env
