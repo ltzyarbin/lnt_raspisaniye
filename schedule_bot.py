@@ -9,7 +9,7 @@ import logging
 from datetime import datetime, timedelta
 from contextlib import contextmanager
 from dotenv import load_dotenv
-import requests
+import httpx
 from bs4 import BeautifulSoup
 from telegram import Update, ReplyKeyboardMarkup, InlineKeyboardButton, InlineKeyboardMarkup, KeyboardButton
 from telegram.request import HTTPXRequest
@@ -368,7 +368,7 @@ def format_teacher_schedule(teacher_name, teacher_data, schedule_date):
 
 # ========== ПАРСИНГ ==========
 
-def get_schedule(group_filter=None):
+async def get_schedule(group_filter=None):
     """Получить расписание всех групп"""
     timestamp = int(time.time() * 1000)
     url = f"http://lntrt.ru/schedule/daySchedule?_={timestamp}"
@@ -379,7 +379,8 @@ def get_schedule(group_filter=None):
     }
     
     try:
-        response = requests.get(url, headers=headers, timeout=10)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers, timeout=10)
         
         if not response.text or response.text.strip() == '':
             print("⚠️ Пустой ответ")
@@ -634,7 +635,7 @@ async def today(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await message.reply_text("⏳ Загружаю расписание...")
 
     # Получаем полное расписание один раз
-    schedule = get_schedule()
+    schedule = await get_schedule()
     
     if not schedule:
         await message.reply_text(
@@ -696,7 +697,7 @@ async def setgroup(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("⏳ Загружаю список групп...")
         
-        schedule = get_schedule()
+        schedule = await get_schedule()
         
         if schedule and 'groups' in schedule:
             groups = sorted(schedule['groups'].keys())
@@ -811,7 +812,7 @@ async def teacher(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     await update.message.reply_text("⏳ Ищу преподавателя...")
     
-    schedule = get_schedule()
+    schedule = await get_schedule()
     
     if not schedule:
         await update.message.reply_text(
@@ -1070,7 +1071,7 @@ async def handle_callback_query(update: Update, context: ContextTypes.DEFAULT_TY
     
     elif data.startswith(CB_SELECT_TEACHER_PREFIX):
         teacher_name = data.replace(CB_SELECT_TEACHER_PREFIX, "")
-        schedule = get_schedule()
+        schedule = await get_schedule()
         teacher_data = find_teacher_schedule(teacher_name, schedule)
         schedule_date = schedule.get('date', 'Дата не указана')
         text = format_teacher_schedule(teacher_name, teacher_data, schedule_date)
@@ -1127,7 +1128,7 @@ async def monitor_schedule(app):
 
     while True:
         try:
-            schedule = get_schedule()
+            schedule = await get_schedule()
 
             if schedule and 'groups' in schedule:
                 current_hashes = {}
@@ -1321,7 +1322,23 @@ def main():
             print(f"🌍 Dummy server started on port {port}")
             server.serve_forever()
             
+        def keep_alive():
+            import time
+            while True:
+                time.sleep(600)  # 10 минут
+                try:
+                    url = os.environ.get("RENDER_EXTERNAL_URL")
+                    if not url:
+                        port = int(os.environ.get("PORT", 10000))
+                        url = f"http://127.0.0.1:{port}"
+                    
+                    httpx.get(url)
+                    print(f"⏰ Keep-alive ping to {url}")
+                except Exception as e:
+                    print(f"⚠️ Keep-alive failed: {e}")
+
         Thread(target=run_server, daemon=True).start()
+        Thread(target=keep_alive, daemon=True).start()
         
         asyncio.run(main_async())
     except KeyboardInterrupt:

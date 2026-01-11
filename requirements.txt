@@ -3,7 +3,7 @@ python-telegram-bot>=20.0
 
 # Парсинг HTML
 beautifulsoup4>=4.12.0
-requests>=2.31.0
+httpx>=0.24.0
 
 # Переменные окружения
 python-dotenv>=1.0.0
