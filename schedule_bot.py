@@ -1305,6 +1305,24 @@ def main():
     
     # Запуск через asyncio.run() для Python 3.10+
     try:
+        # Запускаем dummy-сервер для Render
+        from http.server import HTTPServer, BaseHTTPRequestHandler
+        from threading import Thread
+        
+        class SimpleHandler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"I am alive!")
+        
+        def run_server():
+            port = int(os.environ.get("PORT", 10000))
+            server = HTTPServer(('0.0.0.0', port), SimpleHandler)
+            print(f"🌍 Dummy server started on port {port}")
+            server.serve_forever()
+            
+        Thread(target=run_server, daemon=True).start()
+        
         asyncio.run(main_async())
     except KeyboardInterrupt:
         print("\n👋 Бот остановлен")
