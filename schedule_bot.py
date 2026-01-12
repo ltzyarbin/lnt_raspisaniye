@@ -1168,10 +1168,9 @@ async def monitor_schedule(app):
                     notified_groups = {}
 
                     # Отправляем уведомления только тем, у кого изменилась хотя бы одна группа
-                    for subscriber in subscribers:
+                    # Отправляем уведомления только тем, у кого изменилась хотя бы одна группа
+                    for user_id in subscribers:
                         try:
-                            user_id = subscriber['user_id']
-                            
                             # Получаем все группы пользователя (основная + дополнительные)
                             user_groups = get_user_all_groups(user_id)
                             
